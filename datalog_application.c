@@ -32,7 +32,7 @@
 #include "string.h"
 #include "SensorTile.h"
 #include <math.h>
-    
+
 /* FatFs includes component */
 #include "ff_gen_drv.h"
 #include "sd_diskio.h"
@@ -44,13 +44,48 @@
 #define SAMPLING_FREQUENCY 1000/DATA_PERIOD_MS
 #define HIGH_PASS 1
 #define LOW_PASS 2
+#define DOT 0
+#define DASH 1
+#define ROTATION_ANGLE_ONE_MEASUREMENT =
+
+const int morse_lengths[] = {2, 4, 4, 3, 1, 4, 3, 4, 2, 4, 3, 4, 2, 2, 3, 4, 4, 3, 3, 1, 3, 4, 3, 4, 4, 4};
+
+//BEGIN DEFINITIONS OF CHARACTER SEQUENCES FOR MORSE CODE. The sequence of dots and dashes is transcribed onto a short, where each dash is a 1, and each dot is a 0
+const unsigned short A[] = {DOT, DASH};
+const unsigned short B[] = {DASH, DOT, DOT, DOT};
+const unsigned short C[] = {DASH, DOT, DASH, DOT};
+const unsigned short D[] = {DASH, DOT, DOT};
+const unsigned short E[] = {DOT};
+const unsigned short F[] = {DOT, DOT, DASH, DOT};
+const unsigned short G[] = {DASH, DASH, DOT};
+const unsigned short H[] = {DOT, DOT, DOT, DOT};
+const unsigned short I[] = {DOT, DOT};
+const unsigned short J[] = {DOT, DASH, DASH, DASH};
+const unsigned short K[] = {DASH, DOT, DASH};
+const unsigned short L[] = {DOT, DASH, DOT, DOT};
+const unsigned short M[] = {DASH, DASH};
+const unsigned short N[] = {DASH, DOT};
+const unsigned short O[] = {DASH, DASH, DASH};
+const unsigned short P[] = {DOT, DASH, DASH, DOT};
+const unsigned short Q[] = {DASH, DASH, DOT, DASH};
+const unsigned short R[] = {DOT, DASH, DOT};
+const unsigned short S[] = {DOT, DOT, DOT};
+const unsigned short T[] = {DASH};
+const unsigned short U[] = {DOT, DOT, DASH};
+const unsigned short V[] = {DOT, DOT, DOT, DASH};
+const unsigned short W[] = {DOT, DASH, DASH};
+const unsigned short X[] = {DASH, DOT, DOT, DASH};
+const unsigned short Y[] = {DASH, DOT, DASH, DASH};
+const unsigned short Z[] = {DASH, DASH, DOT, DOT};
+
+const unsigned short LETTERS[26][5] = {A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z};
 
 FRESULT res;                                          /* FatFs function common result code */
 uint32_t byteswritten, bytesread;                     /* File write/read counts */
 FATFS SDFatFs;  /* File system object for SD card logical drive */
 FIL MyFile;     /* File object */
 char SDPath[4]; /* SD card logical drive path */
-    
+
 volatile uint8_t SD_Log_Enabled = 0;
 static uint8_t verbose = 0;  /* Verbose output to UART terminal ON/OFF. */
 
@@ -65,7 +100,7 @@ char newLine[] = "\r\n";
 void DATALOG_SD_Init(void)
 {
   char SDPath[4];
-    
+
   if(FATFS_LinkDriver(&SD_Driver, SDPath) == 0)
   {
     /* Register the file system object to the FatFs module */
@@ -82,7 +117,7 @@ void DATALOG_SD_Init(void)
     }
   }
 }
-  
+
 /**
   * @brief  Start SD-Card demo
   * @param  None
@@ -94,10 +129,10 @@ uint8_t DATALOG_SD_Log_Enable(void)
   char header[] = "Timestamp\tAccX [mg]\tAccY [mg]\tAccZ [mg]\tGyroX [mdps]\tGyroY [mdps]\tGyroZ [mdps]\tMagX [mgauss]\tMagY [mgauss]\tMagZ [mgauss]\tP [mB]\tT [�C]\tH [%]\tVOL [mV]\tBAT [%]\r\n";
   uint32_t byteswritten; /* written byte count */
   char file_name[30] = {0};
-  
+
   /* SD SPI CS Config */
   SD_IO_CS_Init();
-  
+
   sprintf(file_name, "%s%.3d%s", "SensorTile_Log_N", sdcard_file_counter, ".tsv");
   sdcard_file_counter++;
 
@@ -107,7 +142,7 @@ uint8_t DATALOG_SD_Log_Enable(void)
   {
     return 0;
   }
-  
+
   if(f_write(&MyFile, (const void*)&header, sizeof(header)-1, (void *)&byteswritten) != FR_OK)
   {
     return 0;
@@ -123,7 +158,7 @@ uint8_t DATALOG_SD_Log_Enable(void)
 void DATALOG_SD_Log_Disable(void)
 {
   f_close(&MyFile);
-  
+
   /* SD SPI Config */
   SD_IO_CS_DeInit();
 }
@@ -149,11 +184,11 @@ void RTC_Handler( RTC_HandleTypeDef *RtcHandle )
   uint8_t subSec = 0;
   RTC_DateTypeDef sdatestructureget;
   RTC_TimeTypeDef stimestructure;
-  
+
   HAL_RTC_GetTime( RtcHandle, &stimestructure, FORMAT_BIN );
   HAL_RTC_GetDate( RtcHandle, &sdatestructureget, FORMAT_BIN );
   subSec = (((((( int )RTC_SYNCH_PREDIV) - (( int )stimestructure.SubSeconds)) * 100) / ( RTC_SYNCH_PREDIV + 1 )) & 0xff );
-  
+
   if(SendOverUSB) /* Write data on the USB */
   {
     sprintf( dataOut, "\nTimeStamp: %02d:%02d:%02d.%02d", stimestructure.Hours, stimestructure.Minutes, stimestructure.Seconds, subSec );
@@ -162,7 +197,7 @@ void RTC_Handler( RTC_HandleTypeDef *RtcHandle )
   else if(SD_Log_Enabled) /* Write data to the file on the SDCard */
   {
     uint8_t size;
-    size = sprintf( dataOut, "%02d:%02d:%02d.%02d\t", stimestructure.Hours, stimestructure.Minutes, stimestructure.Seconds, subSec);    
+    size = sprintf( dataOut, "%02d:%02d:%02d.%02d\t", stimestructure.Hours, stimestructure.Minutes, stimestructure.Seconds, subSec);
     res = f_write(&MyFile, dataOut, size, (void *)&byteswritten);
   }
 }
@@ -176,7 +211,7 @@ void RTC_Handler( RTC_HandleTypeDef *RtcHandle )
 */
 void Accelero_Sensor_Handler( void *handle )
 {
-  
+
   uint8_t who_am_i;
   float odr;
   float fullScale;
@@ -184,11 +219,11 @@ void Accelero_Sensor_Handler( void *handle )
   SensorAxes_t acceleration;
   uint8_t status;
   int32_t d1, d2;
-  
+
   BSP_ACCELERO_Get_Instance( handle, &id );
-  
+
   BSP_ACCELERO_IsInitialized( handle, &status );
-  
+
   if ( status == 1 )
   {
     if ( BSP_ACCELERO_Get_Axes( handle, &acceleration ) == COMPONENT_ERROR )
@@ -197,12 +232,12 @@ void Accelero_Sensor_Handler( void *handle )
       acceleration.AXIS_Y = 0;
       acceleration.AXIS_Z = 0;
     }
-    
+
     if(SendOverUSB) /* Write data on the USB */
     {
       sprintf( dataOut, "\n\rACC_X: %d, ACC_Y: %d, ACC_Z: %d", (int)acceleration.AXIS_X, (int)acceleration.AXIS_Y, (int)acceleration.AXIS_Z );
-      CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));   
-      
+      CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
+
       if ( verbose == 1 )
       {
         if ( BSP_ACCELERO_Get_WhoAmI( handle, &who_am_i ) == COMPONENT_ERROR )
@@ -213,9 +248,9 @@ void Accelero_Sensor_Handler( void *handle )
         {
           sprintf( dataOut, "WHO AM I address[%d]: 0x%02X\n", id, who_am_i );
         }
-        
+
         CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
-        
+
         if ( BSP_ACCELERO_Get_ODR( handle, &odr ) == COMPONENT_ERROR )
         {
           sprintf( dataOut, "ODR[%d]: ERROR\n", id );
@@ -225,9 +260,9 @@ void Accelero_Sensor_Handler( void *handle )
           floatToInt( odr, &d1, &d2, 3 );
           sprintf( dataOut, "ODR[%d]: %d.%03d Hz\n", (int)id, (int)d1, (int)d2 );
         }
-        
+
         CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
-        
+
         if ( BSP_ACCELERO_Get_FS( handle, &fullScale ) == COMPONENT_ERROR )
         {
           sprintf( dataOut, "FS[%d]: ERROR\n", id );
@@ -237,7 +272,7 @@ void Accelero_Sensor_Handler( void *handle )
           floatToInt( fullScale, &d1, &d2, 3 );
           sprintf( dataOut, "FS[%d]: %d.%03d g\n", (int)id, (int)d1, (int)d2 );
         }
-        
+
         CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
       }
     }
@@ -259,7 +294,7 @@ void Accelero_Sensor_Handler( void *handle )
 */
 void Gyro_Sensor_Handler( void *handle )
 {
-  
+
   uint8_t who_am_i;
   float odr;
   float fullScale;
@@ -267,11 +302,11 @@ void Gyro_Sensor_Handler( void *handle )
   SensorAxes_t angular_velocity;
   uint8_t status;
   int32_t d1, d2;
-  
+
   BSP_GYRO_Get_Instance( handle, &id );
-  
+
   BSP_GYRO_IsInitialized( handle, &status );
-  
+
   if ( status == 1 )
   {
     if ( BSP_GYRO_Get_Axes( handle, &angular_velocity ) == COMPONENT_ERROR )
@@ -280,56 +315,21 @@ void Gyro_Sensor_Handler( void *handle )
       angular_velocity.AXIS_Y = 0;
       angular_velocity.AXIS_Z = 0;
     }
-    
-    if(SendOverUSB) /* Write data on the USB */
-    {
-      float angular_mag = sqrt(pow(angular_velocity.AXIS_X, 2) + pow(angular_velocity.AXIS_Y, 2) + pow(angular_velocity.AXIS_Z, 2));
-      sprintf( dataOut, "\n\rGYR_X: %d, GYR_Y: %d, GYR_Z: %d MAG: %d", (int)angular_velocity.AXIS_X, (int)angular_velocity.AXIS_Y, (int)angular_velocity.AXIS_Z , (int)angular_mag);
-      CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
-      
-      if ( verbose == 1 )
-      {
-        if ( BSP_GYRO_Get_WhoAmI( handle, &who_am_i ) == COMPONENT_ERROR )
-        {
-          sprintf( dataOut, "WHO AM I address[%d]: ERROR\n", id );
-        }
-        else
-        {
-          sprintf( dataOut, "WHO AM I address[%d]: 0x%02X\n", id, who_am_i );
-        }
-        
-        CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
-        
-        if ( BSP_GYRO_Get_ODR( handle, &odr ) == COMPONENT_ERROR )
-        {
-          sprintf( dataOut, "ODR[%d]: ERROR\n", id );
-        }
-        else
-        {
-          floatToInt( odr, &d1, &d2, 3 );
-          sprintf( dataOut, "ODR[%d]: %d.%03d Hz\n", (int)id, (int)d1, (int)d2 );
-        }
-        
-        CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
-        
-        if ( BSP_GYRO_Get_FS( handle, &fullScale ) == COMPONENT_ERROR )
-        {
-          sprintf( dataOut, "FS[%d]: ERROR\n", id );
-        }
-        else
-        {
-          floatToInt( fullScale, &d1, &d2, 3 );
-          sprintf( dataOut, "FS[%d]: %d.%03d dps\n", (int)id, (int)d1, (int)d2 );
-        }
-        
-        CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
-      }
-    }
-    else if(SD_Log_Enabled) /* Write data to the file on the SDCard */
-    {
-      uint8_t size;
-      size = sprintf(dataOut, "%d\t%d\t%d\t", (int)angular_velocity.AXIS_X, (int)angular_velocity.AXIS_Y, (int)angular_velocity.AXIS_Z);
-      res = f_write(&MyFile, dataOut, size, (void *)&byteswritten);
+    else{
+		if(SendOverUSB) /* Write data on the USB */
+		{
+		  // Low pass filter initialization and assignment
+		  int16_t IWon;
+		  int16_t c[3];
+		  IWon = (int) SAMPLING_FREQUENCY / (3.14159 * F0);
+		  c[0] = GAIN / (1.0f + IWon);
+		  c[1] = c[0];
+		  c[2] = c[0] * (1.0f - IWon);
+
+		  float angular_mag = sqrt(pow(angular_velocity.AXIS_X, 2) + pow(angular_velocity.AXIS_Y, 2) + pow(angular_velocity.AXIS_Z, 2));
+		  sprintf( dataOut, "\n\rGYR_X: %d, GYR_Y: %d, GYR_Z: %d MAG: %d", (int)angular_velocity.AXIS_X, (int)angular_velocity.AXIS_Y, (int)angular_velocity.AXIS_Z , (int)angular_mag);
+		  CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
+		}
     }
   }
 }
@@ -350,11 +350,11 @@ void Magneto_Sensor_Handler( void *handle )
   SensorAxes_t magnetic_field;
   uint8_t status;
   int32_t d1, d2;
-  
+
   BSP_MAGNETO_Get_Instance( handle, &id );
-  
+
   BSP_MAGNETO_IsInitialized( handle, &status );
-  
+
   if ( status == 1 )
   {
     if ( BSP_MAGNETO_Get_Axes( handle, &magnetic_field ) == COMPONENT_ERROR )
@@ -363,12 +363,12 @@ void Magneto_Sensor_Handler( void *handle )
       magnetic_field.AXIS_Y = 0;
       magnetic_field.AXIS_Z = 0;
     }
-    
+
     if(SendOverUSB) /* Write data on the USB */
     {
       sprintf( dataOut, "\n\rMAG_X: %d, MAG_Y: %d, MAG_Z: %d", (int)magnetic_field.AXIS_X, (int)magnetic_field.AXIS_Y, (int)magnetic_field.AXIS_Z );
       CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
-      
+
       if ( verbose == 1 )
       {
         if ( BSP_MAGNETO_Get_WhoAmI( handle, &who_am_i ) == COMPONENT_ERROR )
@@ -379,9 +379,9 @@ void Magneto_Sensor_Handler( void *handle )
         {
           sprintf( dataOut, "WHO AM I address[%d]: 0x%02X\n", id, who_am_i );
         }
-        
-        CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));      
-        
+
+        CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
+
         if ( BSP_MAGNETO_Get_ODR( handle, &odr ) == COMPONENT_ERROR )
         {
           sprintf( dataOut, "ODR[%d]: ERROR\n", id );
@@ -391,9 +391,9 @@ void Magneto_Sensor_Handler( void *handle )
           floatToInt( odr, &d1, &d2, 3 );
           sprintf( dataOut, "ODR[%d]: %d.%03d Hz\n", (int)id, (int)d1, (int)d2 );
         }
-        
+
         CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
-        
+
         if ( BSP_MAGNETO_Get_FS( handle, &fullScale ) == COMPONENT_ERROR )
         {
           sprintf( dataOut, "FS[%d]: ERROR\n", id );
@@ -403,7 +403,7 @@ void Magneto_Sensor_Handler( void *handle )
           floatToInt( fullScale, &d1, &d2, 3 );
           sprintf( dataOut, "FS[%d]: %d.%03d Gauss\n", (int)id, (int)d1, (int)d2 );
         }
-        
+
         CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
       }
     }
@@ -430,25 +430,25 @@ void Humidity_Sensor_Handler( void *handle )
   uint8_t id;
   float humidity;
   uint8_t status;
-  
+
   BSP_HUMIDITY_Get_Instance( handle, &id );
-  
+
   BSP_HUMIDITY_IsInitialized( handle, &status );
-  
+
   if ( status == 1 )
   {
     if ( BSP_HUMIDITY_Get_Hum( handle, &humidity ) == COMPONENT_ERROR )
     {
       humidity = 0.0f;
     }
-    
+
     floatToInt( humidity, &d1, &d2, 2 );
-    
+
     if(SendOverUSB) /* Write data on the USB */
     {
       sprintf( dataOut, "\n\rHUM: %d.%02d", (int)d1, (int)d2 );
       CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
-      
+
       if ( verbose == 1 )
       {
         if ( BSP_HUMIDITY_Get_WhoAmI( handle, &who_am_i ) == COMPONENT_ERROR )
@@ -459,9 +459,9 @@ void Humidity_Sensor_Handler( void *handle )
         {
           sprintf( dataOut, "WHO AM I address[%d]: 0x%02X\n", id, who_am_i );
         }
-        
+
         CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
-        
+
         if ( BSP_HUMIDITY_Get_ODR( handle, &odr ) == COMPONENT_ERROR )
         {
           sprintf( dataOut, "ODR[%d]: ERROR\n", id );
@@ -471,7 +471,7 @@ void Humidity_Sensor_Handler( void *handle )
           floatToInt( odr, &d1, &d2, 3 );
           sprintf( dataOut, "ODR[%d]: %d.%03d Hz\n", (int)id, (int)d1, (int)d2 );
         }
-        
+
         CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
       }
     }
@@ -492,32 +492,32 @@ void Humidity_Sensor_Handler( void *handle )
 */
 void Temperature_Sensor_Handler( void *handle )
 {
-  
+
   int32_t d1, d2;
   uint8_t who_am_i;
   float odr;
   uint8_t id;
   float temperature;
   uint8_t status;
-  
+
   BSP_TEMPERATURE_Get_Instance( handle, &id );
-  
+
   BSP_TEMPERATURE_IsInitialized( handle, &status );
-  
+
   if ( status == 1 )
   {
     if ( BSP_TEMPERATURE_Get_Temp( handle, &temperature ) == COMPONENT_ERROR )
     {
       temperature = 0.0f;
     }
-    
+
     floatToInt( temperature, &d1, &d2, 2 );
-    
+
     if(SendOverUSB) /* Write data on the USB */
     {
       sprintf( dataOut, "\n\rTEMP: %d.%02d", (int)d1, (int)d2 );
       CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
-      
+
       if ( verbose == 1 )
       {
         if ( BSP_TEMPERATURE_Get_WhoAmI( handle, &who_am_i ) == COMPONENT_ERROR )
@@ -528,9 +528,9 @@ void Temperature_Sensor_Handler( void *handle )
         {
           sprintf( dataOut, "WHO AM I address[%d]: 0x%02X\n", id, who_am_i );
         }
-        
+
         CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
-        
+
         if ( BSP_TEMPERATURE_Get_ODR( handle, &odr ) == COMPONENT_ERROR )
         {
           sprintf( dataOut, "ODR[%d]: ERROR\n", id );
@@ -540,7 +540,7 @@ void Temperature_Sensor_Handler( void *handle )
           floatToInt( odr, &d1, &d2, 3 );
           sprintf( dataOut, "ODR[%d]: %d.%03d Hz\n", (int)id, (int)d1, (int)d2 );
         }
-        
+
         CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
       }
     }
@@ -568,25 +568,25 @@ void Pressure_Sensor_Handler( void *handle )
   uint8_t id;
   float pressure;
   uint8_t status;
-  
+
   BSP_PRESSURE_Get_Instance( handle, &id );
-  
+
   BSP_PRESSURE_IsInitialized( handle, &status );
-  
+
   if( status == 1 )
   {
     if ( BSP_PRESSURE_Get_Press( handle, &pressure ) == COMPONENT_ERROR )
     {
       pressure = 0.0f;
     }
-    
+
     floatToInt( pressure, &d1, &d2, 2 );
-    
+
     if(SendOverUSB)
     {
       sprintf(dataOut, "\n\rPRESS: %d.%02d", (int)d1, (int)d2);
       CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
-      
+
       if ( verbose == 1 )
       {
         if ( BSP_PRESSURE_Get_WhoAmI( handle, &who_am_i ) == COMPONENT_ERROR )
@@ -597,8 +597,8 @@ void Pressure_Sensor_Handler( void *handle )
         {
           sprintf( dataOut, "WHO AM I address[%d]: 0x%02X\n", id, who_am_i );
         }
-        CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));      
-        
+        CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
+
         if ( BSP_PRESSURE_Get_ODR( handle, &odr ) == COMPONENT_ERROR )
         {
           sprintf( dataOut, "ODR[%d]: ERROR\n", id );
@@ -608,7 +608,7 @@ void Pressure_Sensor_Handler( void *handle )
           floatToInt( odr, &d1, &d2, 3 );
           sprintf( dataOut, "ODR[%d]: %d.%03d Hz\n", (int)id, (int)d1, (int)d2 );
         }
-        CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));      
+        CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
       }
     }
     else if(SD_Log_Enabled) /* Write data to the file on the SDCard */
@@ -624,9 +624,9 @@ void Gas_Gauge_Handler( void *handle )
 {
   uint32_t voltage, soc;
   uint8_t vmode, status;
-  
+
   BSP_GG_IsInitialized(handle, &status );
-  
+
   if ( status == 1 )
   {
     /* Update Gas Gauge Status */
@@ -641,12 +641,12 @@ void Gas_Gauge_Handler( void *handle )
     {
       voltage = 0.0f;
     }
-    
+
     if ( BSP_GG_GetSOC(handle, &soc) == COMPONENT_ERROR )
     {
       soc= 0.0f;
     }
-    
+
     if(SendOverUSB) /* Write data on the USB */
     {
       sprintf( dataOut, "\n\rV: %dmV Chrg: %d%%", (uint32_t)voltage, (uint32_t)soc);
