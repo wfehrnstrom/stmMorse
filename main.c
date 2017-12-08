@@ -1,42 +1,3 @@
-/**
- ******************************************************************************
- * @file    DataLog/Src/main.c
- * @author  Central Labs
- * @version V1.1.1
- * @date    06-Dec-2016
- * @brief   Main program body
- ******************************************************************************
- * @attention
- *
- * <h2><center>&copy; COPYRIGHT(c) 2016 STMicroelectronics</center></h2>
- *
- * Redistribution and use in source and binary forms, with or without modification,
- * are permitted provided that the following conditions are met:
- *   1. Redistributions of source code must retain the above copyright notice,
- *      this list of conditions and the following disclaimer.
- *   2. Redistributions in binary form must reproduce the above copyright notice,
- *      this list of conditions and the following disclaimer in the documentation
- *      and/or other materials provided with the distribution.
- *   3. Neither the name of STMicroelectronics nor the names of its contributors
- *      may be used to endorse or promote products derived from this software
- *      without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************
- */
-
-/* Includes ------------------------------------------------------------------*/
-
 #include <string.h> /* strlen */
 #include <stdio.h>  /* sprintf */
 #include <math.h>   /* trunc */
@@ -54,11 +15,12 @@
 /* Private define ------------------------------------------------------------*/
 
 /* Data acquisition period [ms] */
-#define DATA_PERIOD_MS (10)
+#define DATA_COLLECTION_PERIOD_MS (20)
+#define DATA_CHECK_PERIOD_MS (2)
 
 #define F0 1
 #define GAIN 1024
-#define SAMPLING_FREQUENCY 1000/DATA_PERIOD_MS
+#define SAMPLING_FREQUENCY 1000/DATA_COLLECTION_PERIOD_MS
 #define DOT 0
 #define DASH 1
 #define FILLER 2
@@ -69,35 +31,35 @@
 #define MEASUREMENT_TIME 3000 // milliseconds
 #define ASCII_SHIFT 97
 
-//BEGIN DEFINITIONS OF CHARACTER SEQUENCES FOR MORSE CODE. The sequence of dots and dashes is transcribed onto a short, where each dash is a 1, and each dot is a 0
-const unsigned short A[] = {DOT, DASH, FILLER, FILLER, FILLER};
-const unsigned short B[] = {DASH, DOT, DOT, DOT, FILLER};
-const unsigned short C[] = {DASH, DOT, DASH, DOT, FILLER};
-const unsigned short D[] = {DASH, DOT, DOT, FILLER, FILLER};
-const unsigned short E[] = {DOT, FILLER, FILLER, FILLER, FILLER};
-const unsigned short F[] = {DOT, DOT, DASH, DOT, FILLER};
-const unsigned short G[] = {DASH, DASH, DOT, FILLER, FILLER};
-const unsigned short H[] = {DOT, DOT, DOT, DOT, FILLER};
-const unsigned short I[] = {DOT, DOT, FILLER, FILLER, FILLER};
-const unsigned short J[] = {DOT, DASH, DASH, DASH, FILLER};
-const unsigned short K[] = {DASH, DOT, DASH, FILLER, FILLER};
-const unsigned short L[] = {DOT, DASH, DOT, DOT, FILLER};
-const unsigned short M[] = {DASH, DASH, FILLER, FILLER, FILLER};
-const unsigned short N[] = {DASH, DOT, FILLER, FILLER, FILLER};
-const unsigned short O[] = {DASH, DASH, DASH, FILLER, FILLER};
-const unsigned short P[] = {DOT, DASH, DASH, DOT, FILLER};
-const unsigned short Q[] = {DASH, DASH, DOT, DASH, FILLER};
-const unsigned short R[] = {DOT, DASH, DOT, FILLER, FILLER};
-const unsigned short S[] = {DOT, DOT, DOT, FILLER, FILLER};
-const unsigned short T[] = {DASH, FILLER, FILLER, FILLER, FILLER};
-const unsigned short U[] = {DOT, DOT, DASH, FILLER, FILLER};
-const unsigned short V[] = {DOT, DOT, DOT, DASH, FILLER};
-const unsigned short W[] = {DOT, DASH, DASH, FILLER, FILLER};
-const unsigned short X[] = {DASH, DOT, DOT, DASH, FILLER};
-const unsigned short Y[] = {DASH, DOT, DASH, DASH, FILLER};
-const unsigned short Z[] = {DASH, DASH, DOT, DOT, FILLER};
+//BEGIN DEFINITIONS OF CHARACTER SEQUENCES FOR MORSE CODE. The sequence of dots and dashes is transcribed onto a int, where each dash is a 1, and each dot is a 0
+const unsigned int A[] = {DOT, DASH, FILLER, FILLER, FILLER};
+const unsigned int B[] = {DASH, DOT, DOT, DOT, FILLER};
+const unsigned int C[] = {DASH, DOT, DASH, DOT, FILLER};
+const unsigned int D[] = {DASH, DOT, DOT, FILLER, FILLER};
+const unsigned int E[] = {DOT, FILLER, FILLER, FILLER, FILLER};
+const unsigned int F[] = {DOT, DOT, DASH, DOT, FILLER};
+const unsigned int G[] = {DASH, DASH, DOT, FILLER, FILLER};
+const unsigned int H[] = {DOT, DOT, DOT, DOT, FILLER};
+const unsigned int I[] = {DOT, DOT, FILLER, FILLER, FILLER};
+const unsigned int J[] = {DOT, DASH, DASH, DASH, FILLER};
+const unsigned int K[] = {DASH, DOT, DASH, FILLER, FILLER};
+const unsigned int L[] = {DOT, DASH, DOT, DOT, FILLER};
+const unsigned int M[] = {DASH, DASH, FILLER, FILLER, FILLER};
+const unsigned int N[] = {DASH, DOT, FILLER, FILLER, FILLER};
+const unsigned int O[] = {DASH, DASH, DASH, FILLER, FILLER};
+const unsigned int P[] = {DOT, DASH, DASH, DOT, FILLER};
+const unsigned int Q[] = {DASH, DASH, DOT, DASH, FILLER};
+const unsigned int R[] = {DOT, DASH, DOT, FILLER, FILLER};
+const unsigned int S[] = {DOT, DOT, DOT, FILLER, FILLER};
+const unsigned int T[] = {DASH, FILLER, FILLER, FILLER, FILLER};
+const unsigned int U[] = {DOT, DOT, DASH, FILLER, FILLER};
+const unsigned int V[] = {DOT, DOT, DOT, DASH, FILLER};
+const unsigned int W[] = {DOT, DASH, DASH, FILLER, FILLER};
+const unsigned int X[] = {DASH, DOT, DOT, DASH, FILLER};
+const unsigned int Y[] = {DASH, DOT, DASH, DASH, FILLER};
+const unsigned int Z[] = {DASH, DASH, DOT, DOT, FILLER};
 
-const unsigned short letters[26][5] = {{DOT, DASH, FILLER, FILLER, FILLER}, {DASH, DOT, DOT, DOT, FILLER}, {DASH, DOT, DASH, DOT, FILLER}, {DASH, DOT, DOT, FILLER, FILLER},
+const unsigned int letters[26][5] = {{DOT, DASH, FILLER, FILLER, FILLER}, {DASH, DOT, DOT, DOT, FILLER}, {DASH, DOT, DASH, DOT, FILLER}, {DASH, DOT, DOT, FILLER, FILLER},
     {DOT, FILLER, FILLER, FILLER, FILLER}, {DOT, DOT, DASH, DOT, FILLER}, {DASH, DASH, DOT, FILLER, FILLER}, {DOT, DOT, DOT, DOT, FILLER}, {DOT, DOT, FILLER, FILLER, FILLER},
     {DOT, DASH, DASH, DASH, FILLER}, {DASH, DOT, DASH, FILLER, FILLER}, {DOT, DASH, DOT, DOT, FILLER}, {DASH, DASH, FILLER, FILLER, FILLER}, {DASH, DOT, FILLER, FILLER, FILLER},
     {DASH, DASH, DASH, FILLER, FILLER}, {DOT, DASH, DASH, DOT, FILLER}, {DASH, DASH, DOT, DASH, FILLER}, {DOT, DASH, DOT, FILLER, FILLER}, {DOT, DOT, DOT, FILLER, FILLER},
@@ -142,9 +104,45 @@ static void initializeAllSensors( void );
 
 
 /* Private functions ---------------------------------------------------------*/
+int sensorUpsideDown(int32_t acc_z){
+    if(acc_z < ACC_THRESHOLD){
+        return 1;
+    }
+    return 0;
+}
+
+uint32_t rmsLowPass(int32_t* data_millis){
+    uint32_t sum = 0;
+    int16_t IWon;
+    int16_t c[3];
+    int32_t prev_in, curr_in;
+    int32_t data[50];
+    IWon = (int)SAMPLING_FREQUENCY/(3.14159 * F0);
+    c[0] = GAIN / (1.0f + IWon);
+    c[1] = c[0];
+    c[2] = c[0] * (1.0f - IWon);
+    for (int i = 0; i < 50; i++) {
+        if (i == 0) {
+            prev_in = data_millis[0];
+        } else {
+            curr_in = data_millis[i];
+            data_millis[i] = curr_in * c[0] + prev_in * c[1] - data_millis[i-1] * c[2];
+            data_millis[i] = data_millis[i] / GAIN;
+            prev_in = curr_in;
+        }
+        data[i] = data_millis[i] / 1000; // divide by 1000 to get number of degrees
+    }
+    // calculate RMS amplitude for the 50 samples
+    sum = 0;
+    for (int i = 0; i < 50; i++) {
+        sum += data[i] * data[i];
+    }
+    sum = sum / 50;
+    return sqrt(sum);
+}
 
 char getLetter(int* morseSequence){
-    int foundLetter = 0;
+    char dataOut[256];
     char c = 0;
     for(int i = 0; i < 26; i++){
         int letterMatch = 1;
@@ -159,6 +157,8 @@ char getLetter(int* morseSequence){
             break;
         }
     }
+    sprintf(dataOut, "ASCII VALUE: %c", (char)c);
+    CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
     return c;
 }
 
@@ -230,139 +230,132 @@ int main( void )
     initializeAllSensors();
     enableAllSensors();
     
-    // declare variables start
+    // declare two arrays, one to hold raw gyro_x values, the other to hold gyro_x values in units of degrees
     int32_t gyro_x[50];
-    int32_t gyro_x_deg[50];
-    //int32_t gyro_y[50];
-    //int32_t gyro_z[50];
-    int32_t gyro_read_in[1];
-    int counter = 0;
+    int counter = 0; // a counter for the number of gyro samples we collect before we apply a low pass filter
     int nextCodeReady = 0; // boolean
-    int32_t sum;
-    int i, rms;
-    int sequenceIndex = 0;
-    int32_t prev_in, curr_in;
-    char dataOut[256];
-    int userMorseSequence[10];
-    int sequenceOver = 0;
-    int notified = 0;
+    int sequenceIndex = 0; // stores our current index in the morse code input sequence
+    char dataOut[256]; // an array to put serial characters in
+    int userMorseSequence[10]; // the array into which we store our dots and dashes
+    int sequenceOver = 0; //boolean checking whether our sequence is over
     
-    int16_t IWon;
-    int16_t c[3];
-    IWon = (int)SAMPLING_FREQUENCY/(3.14159 * F0);
-    c[0] = GAIN / (1.0f + IWon);
-    c[1] = c[0];
-    c[2] = c[0] * (1.0f - IWon);
-    
-    while (1)
+    while (1) // always run this loop forever
     {
         /* Get sysTick value and check if it's time to execute the task */
         msTick = HAL_GetTick();
-        if(msTick % DATA_PERIOD_MS == 0 && msTickPrev != msTick)
+        // if some time has elapsed since our last visit through here, and this time is an increment of DATA_CHECK_PERIOD_MS
+        if(msTick % DATA_CHECK_PERIOD_MS == 0 && msTickPrev != msTick)
         {
-            int32_t acc_z = Accelero_Sensor_Handler(LSM6DSM_X_0_handle);
-            if(acc_z < ACC_THRESHOLD && !nextCodeReady){
-                //sprintf(dataOut, "ACCELERATION EXCEEDS -1000 mG in Z direction");
-                //CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
-                nextCodeReady = 1;
-                sprintf(dataOut, "NEXT CODE READY\n\r");
-                CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
-                sprintf(dataOut, "SEQUENCE OVER: %d\n\r", (int)sequenceOver);
-                CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
+            // if we are not yet ready to start sending a dot or dash respectively
+            if(!nextCodeReady){
+                // get the current acceleration in the z-direction
+                int32_t acc_z = Accelero_Sensor_Handler(LSM6DSM_X_0_handle);
+                // check if the sensor is being held upside down.  If it is, we're ready to receive a dot or dash
+                nextCodeReady = sensorUpsideDown(acc_z);
+                // Log that we are ready
+                if(nextCodeReady){
+                    sprintf(dataOut, "NEXT CODE READY\n\r");
+                    CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
+                }
             }
-            if(msTick % (DATA_PERIOD_MS * 2) == 0 && msTickPrev != msTick && nextCodeReady && !sequenceOver){
-                if(counter == 0){
-                    sprintf(dataOut, "Collecting Data....\n\r");
-                    CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
-                }
+            // if we are at a time that is an increment of DATA_COLLECTION_PERIOD_MS and we are not at the same time as our last stop through here
+            if(msTick % (DATA_COLLECTION_PERIOD_MS) == 0 && msTickPrev != msTick){
+                // set the previous tick to this tick
                 msTickPrev = msTick;
-                uint32_t gyro_meas = Gyro_Sensor_Handler(LSM6DSM_G_0_handle);
-                if(counter < 50){
-                    gyro_x[counter] = gyro_meas;
-                    counter++;
-                    if(counter > 45){
-                        sprintf(dataOut, "COUNTER: %d\n\r", (int)counter);
+                // if we are ready to receive a dot and dash and the entire dot and dash sequence is not over
+                if(nextCodeReady && !sequenceOver){
+                    // debugging info
+                    if(counter == 0){
+                        sprintf(dataOut, "Collecting Data....\n\r");
                         CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
                     }
-                }
-                if(counter > 40){
-                    sprintf(dataOut, "COUNTER GLOBAL: %d\n\r", (int)counter);
-                    CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
-                }
-                // apply filter if 50 gyro_x data samples are is collected
-                if (counter >= 50) {
-                    sprintf(dataOut, "TICK\n\r");
-                    CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
-                    // reset counter
-                    counter = 0;
-                    // apply low pass filter
-                    for (i = 0; i < 50; i++) {
-                        if (i == 0) {
-                            prev_in = gyro_x[0];
-                        } else {
-                            curr_in = gyro_x[i];
-                            gyro_x[i] = curr_in * c[0] + prev_in * c[1] - gyro_x[i-1] * c[2];
-                            gyro_x[i] = gyro_x[i] / GAIN;
-                            prev_in = curr_in;
+                    // if we have less than 50 samples so far
+                    if(counter < 50){
+                        // grab a gyro value from the sensor tile
+                        uint32_t gyro_meas = Gyro_Sensor_Handler(LSM6DSM_G_0_handle);
+                        // set our array index at counter containing raw values to the raw gyro value just retrieved
+                        gyro_x[counter] = gyro_meas;
+                        // increment our counter so we correctly grab the next value
+                        counter++;
+                        // debugging info
+                        if(counter > 45){
+                            sprintf(dataOut, "COUNTER: %d\n\r", (int)counter);
+                            CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
                         }
-                        gyro_x_deg[i] = gyro_x[i] / 1000; // divide by 1000 to get number of degrees
                     }
-                    // calculate RMS amplitude for the 50 samples
-                    sum = 0;
-                    for (i = 0; i < 50; i++) {
-                        sum += gyro_x_deg[i] * gyro_x_deg[i];
-                    }
-                    sum = sum / 50;
-                    rms = sqrt(sum);
-                    if(sequenceIndex < 5){
-                        sprintf(dataOut, "SEQUENCE INDEX: %d", (int)sequenceIndex);
+                    // apply filter if 50 gyro_x data samples are is collected
+                    if (counter >= 50) {
+                        sprintf(dataOut, "TICK\n\r");
                         CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
-                        if(rms > RMS_GYRO_THRESHOLD){
-                            sprintf(dataOut, "DASH\n\r");
+                        // reset counter
+                        counter = 0;
+                        // apply low pass filter
+                        uint32_t rms = rmsLowPass(gyro_x);
+                        // if we have less than 5 dots and dashes
+                        if(sequenceIndex < 5){
+                            // print out what index we're at
+                            sprintf(dataOut, "SEQUENCE INDEX: %d, ", (int)sequenceIndex);
                             CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
-                            userMorseSequence[sequenceIndex] = DASH;
-                            
-                        }
-                        else if(rms > RMS_GYRO_MIN_THRESHOLD){
-                            sprintf(dataOut, "DOT\n\r");
-                            CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
-                            userMorseSequence[sequenceIndex] = DOT;
-                        }
-                        else{
-                            sprintf(dataOut, "SEQUENCE OVER\n\r");
-                            CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
-                            if(sequenceIndex > 0){
-                                sequenceOver = 1;
-                                if(sequenceIndex < 5){
-                                    for(int i = sequenceIndex; i < 5; i++){
-                                        userMorseSequence[i] = FILLER;
-                                    }
-                                    sprintf(dataOut, "\n\n\r*BEGIN SEQUENCE*\n\r");
-                                    CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
-                                    for(int i = 0 ; i < 5; i++){
-                                        sprintf(dataOut, "%d\n\r", (int)userMorseSequence[i]);
+                            // if the rms value we just got was greater than the threshold for a dash
+                            if(rms > RMS_GYRO_THRESHOLD){
+                                // we just detected a dash!
+                                sprintf(dataOut, "DASH\n\r");
+                                CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
+                                userMorseSequence[sequenceIndex] = DASH;
+                                sequenceIndex++;
+                            }
+                            // if the rms gyro value was greater than the minimum threshold, then we received a dot
+                            else if(rms > RMS_GYRO_MIN_THRESHOLD){
+                                // we just detected a dot!
+                                sprintf(dataOut, "DOT\n\r");
+                                CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
+                                userMorseSequence[sequenceIndex] = DOT;
+                                sequenceIndex++;
+                            }
+                            // if it's less than both of these, the user is holding the sensor tile steady.  This means that we want to terminate our sequence
+                            else{
+                                sprintf(dataOut, "SEQUENCE OVER\n\r");
+                                CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
+                                // if we have more than one dot or dash stored
+                                if(sequenceIndex > 0){
+                                    // set a flag indicating the sequence is over to true
+                                    sequenceOver = 1;
+                                    // if we have less than 5 dots and dashes
+                                    if(sequenceIndex < 5){
+                                        // put filler values in the rest of the user morse sequence array
+                                        for(int i = sequenceIndex; i < 5; i++){
+                                            userMorseSequence[i] = FILLER;
+                                        }
+                                        sprintf(dataOut, "\n\n\r*BEGIN SEQUENCE*\n\r");
+                                        CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
+                                        // now print out our dots and dashes
+                                        for(int i = 0 ; i < 5; i++){
+                                            sprintf(dataOut, "%d\n\r", (int)userMorseSequence[i]);
+                                            CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
+                                        }
+                                        sprintf(dataOut, "\n\n\r*END SEQUENCE*\n\r");
                                         CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
                                     }
-                                    sprintf(dataOut, "\n\n\r*END SEQUENCE*\n\r");
-                                    CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
+                                    // get which letter we encoded with our dots and dashes
+                                    getLetter(userMorseSequence);
+                                    sequenceIndex = 0;
                                 }
-                                char c = getLetter(userMorseSequence);
-                                sprintf(dataOut, 'CHARACTER: %c\n\r', (char)c);
-                                CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
                             }
                         }
+                        // display the RMS value by USB streaming
+                        // fill dataOut buffer with display message
+                        sprintf(dataOut, "\n\r\n\r\n\rRMS: %d\n\r", (int) rms);
+                        // send message in buffer by USB streaming
+                        CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
+                        // Set the boolean checking whether the next code is ready to false
+                        nextCodeReady = 0;
+                        // delay by half a second
+                        HAL_Delay(500);
                     }
-                    // display the RMS value by USB streaming
-                    // fill dataOut buffer with display message
-                    sprintf(dataOut, "\n\r\n\r\n\rRMS: %d\n\r", (int) rms);
-                    // send message in buffer by USB streaming
-                    CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
-                    // Set the boolean checking whether the next code is ready to false
-                    nextCodeReady = 0;
-                    sequenceIndex++;
                 }
             }
         }
+        //HAL_Delay(1);
     }
     
     
